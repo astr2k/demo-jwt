@@ -64,8 +64,13 @@ class NotesControllerTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", Matchers.not(Matchers.empty())))
-                .andExpect(jsonPath("$..id", Matchers.hasItems(expectedIds)))
-                .andReturn();
+                .andExpect(jsonPath("$..id", Matchers.hasItems(expectedIds)));
+    }
+
+    @Test
+    void when_JwtTokenNotPresent_then_Unauthorized() throws Exception {
+        mvc.perform(get("/notes"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -100,7 +105,57 @@ class NotesControllerTest {
         NoteEntity newNote = notesRepository.findById(newId).get();
         Assertions.assertEquals("Test title", newNote.getTitle());
         Assertions.assertEquals("Test content", newNote.getContent());
-
     }
 
+    @Test
+    void when_AuthenticatedButHasNotWriteAuthority_then_Forbidden() throws Exception {
+        MvcResult result = mvc.perform(post("/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                	{
+                                		"login": "user1",
+                                		"password": "pwd1"
+                                	}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String token = result.getResponse().getContentAsString();
+        mvc.perform(post("/notes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                	{
+                                		"title": "Test title",
+                                		"content": "Test content"
+                                	}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void when_CreateNewNoteRequestIsInvalid_then_BadRequest() throws Exception {
+        MvcResult result = mvc.perform(post("/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                	{
+                                		"login": "user2",
+                                		"password": "pwd2"
+                                	}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String token = result.getResponse().getContentAsString();
+        mvc.perform(post("/notes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                	{
+                                		"title": "",
+                                		"content": "  "
+                                	}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
 }
