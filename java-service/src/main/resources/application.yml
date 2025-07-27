@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:db
+    username: sa
+    password:
+    driverClassName: org.h2.Driver
+  liquibase:
+    change-log: classpath:db/changelog.xml
+  jpa:
+    spring.jpa.database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: true
+        use_sql_comments: true
+  h2:
+    console:
+      enabled: true
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+jwt:
+  private.key: classpath:private_key
+  public.key: classpath:public_key
+  expiration.seconds: 600
+
+
